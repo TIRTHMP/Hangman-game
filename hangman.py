@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
 import random
-from playsound import playsound
+from playsound3 import playsound
 
 # =============================
 # THEME CONFIGURATION
