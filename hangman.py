@@ -8,14 +8,12 @@ from playsound3 import playsound
 # =============================
 LIGHT_THEME = {
     "bg": "white",
-    "fg": "black",
-    "canvas": "white"
+    "fg": "black"
 }
 
 DARK_THEME = {
     "bg": "#1e1e1e",
-    "fg": "white",
-    "canvas": "#2b2b2b"
+    "fg": "white"
 }
 
 current_theme = DARK_THEME
@@ -41,17 +39,19 @@ root.title("Hangman Game")
 root.config(bg=current_theme["bg"])
 
 # =============================
-# CANVAS
+# LOAD HANGMAN GIFS
 # =============================
-canvas = tk.Canvas(root, width=300, height=300,
-                   bg=current_theme["canvas"], highlightthickness=0)
-canvas.grid(row=0, column=0, columnspan=3)
+hangman_images = []
+for i in range(7):
+    img = tk.PhotoImage(file=f"Hangman-{i}.gif")
+    hangman_images.append(img)
 
-def draw_scaffold():
-    canvas.create_line(20, 280, 120, 280, fill=current_theme["fg"])
-    canvas.create_line(70, 280, 70, 20, fill=current_theme["fg"])
-    canvas.create_line(70, 20, 170, 20, fill=current_theme["fg"])
-    canvas.create_line(170, 20, 170, 50, fill=current_theme["fg"])
+# =============================
+# HANGMAN IMAGE LABEL
+# =============================
+image_label = tk.Label(root, image=hangman_images[0],
+                       bg=current_theme["bg"])
+image_label.grid(row=0, column=0, columnspan=3)
 
 # =============================
 # GAME SETUP
@@ -90,6 +90,14 @@ guess_entry = tk.Entry(root)
 guess_entry.grid(row=4, column=0, columnspan=3)
 
 # =============================
+# UPDATE GIF BASED ON GUESSES
+# =============================
+def update_hangman_image():
+    stage = 6 - guesses
+    stage = min(max(stage, 0), 6)
+    image_label.config(image=hangman_images[stage])
+
+# =============================
 # GAME LOGIC
 # =============================
 def check_guess():
@@ -120,24 +128,12 @@ def check_guess():
     else:
         guesses -= 1
         guesses_label.config(text=f"Guesses remaining: {guesses}")
-        draw_hangman()
+        update_hangman_image()
 
-def draw_hangman():
-    if guesses == 5:
-        canvas.create_oval(140, 50, 200, 110, outline=current_theme["fg"])
-    elif guesses == 4:
-        canvas.create_line(170, 110, 170, 170, fill=current_theme["fg"])
-    elif guesses == 3:
-        canvas.create_line(170, 130, 140, 140, fill=current_theme["fg"])
-    elif guesses == 2:
-        canvas.create_line(170, 130, 200, 140, fill=current_theme["fg"])
-    elif guesses == 1:
-        canvas.create_line(170, 170, 140, 190, fill=current_theme["fg"])
-    elif guesses == 0:
-        canvas.create_line(170, 170, 200, 190, fill=current_theme["fg"])
-        playsound("lose.mp3")
-        messagebox.showinfo("Hangman", f"❌ You Lose!\nWord was: {word}")
-        guess_entry.config(state=tk.DISABLED)
+        if guesses == 0:
+            playsound("lose.mp3")
+            messagebox.showinfo("Hangman", f"❌ You Lose!\nWord was: {word}")
+            guess_entry.config(state=tk.DISABLED)
 
 # =============================
 # HINT SYSTEM
@@ -154,12 +150,11 @@ def give_hint():
 # =============================
 def restart_game():
     setup_game()
-    canvas.delete("all")
-    draw_scaffold()
     word_label.config(text=" ".join("_" for _ in word))
     guesses_label.config(text=f"Guesses remaining: {guesses}")
     guessed_label.config(text="Guessed letters: ")
     guess_entry.config(state=tk.NORMAL)
+    image_label.config(image=hangman_images[0])
 
 # =============================
 # THEME TOGGLE
@@ -169,8 +164,7 @@ def toggle_theme():
     current_theme = LIGHT_THEME if current_theme == DARK_THEME else DARK_THEME
 
     root.config(bg=current_theme["bg"])
-    canvas.config(bg=current_theme["canvas"])
-    draw_scaffold()
+    image_label.config(bg=current_theme["bg"])
 
     for widget in root.winfo_children():
         if isinstance(widget, tk.Label):
@@ -199,10 +193,9 @@ tk.Button(root, text="Light / Dark", command=toggle_theme)\
     .grid(row=7, column=0, columnspan=3)
 
 # =============================
-# INITIALIZE GAME
+# INITIALIZE
 # =============================
 setup_game()
-draw_scaffold()
 restart_game()
 
 root.bind("<Return>", lambda event: check_guess())
