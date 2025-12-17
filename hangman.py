@@ -3,135 +3,207 @@ from tkinter import messagebox
 import random
 from playsound import playsound
 
+# =============================
+# THEME CONFIGURATION
+# =============================
+LIGHT_THEME = {
+    "bg": "white",
+    "fg": "black",
+    "canvas": "white"
+}
 
-# Define the list of words
-words = ["apple", "banana", "cherry", "orange", "lemon", "grape", "pineapple", "watermelon"]
+DARK_THEME = {
+    "bg": "#1e1e1e",
+    "fg": "white",
+    "canvas": "#2b2b2b"
+}
 
-# Choose a random word from the list
-word = random.choice(words)
+current_theme = DARK_THEME
 
-# Initialize the number of guesses and the list of guessed letters
+# =============================
+# WORD LISTS BY DIFFICULTY
+# =============================
+easy_words = ["apple", "grape", "lemon", "mango"]
+medium_words = ["banana", "cherry", "orange"]
+hard_words = ["pineapple", "watermelon"]
+
+difficulty = "Medium"
+
+word = ""
 guesses = 6
 guessed_letters = []
 
-# Create the main window
+# =============================
+# ROOT WINDOW
+# =============================
 root = tk.Tk()
-root.title("Hangman")
+root.title("Hangman Game")
+root.config(bg=current_theme["bg"])
 
-# Create the canvas for drawing the hangman
-canvas = tk.Canvas(root, width=300, height=300)
-canvas.grid(column=0, row=0)
+# =============================
+# CANVAS
+# =============================
+canvas = tk.Canvas(root, width=300, height=300,
+                   bg=current_theme["canvas"], highlightthickness=0)
+canvas.grid(row=0, column=0, columnspan=3)
 
-# Draw the scaffold
-canvas.create_line(20, 280, 120, 280)
-canvas.create_line(70, 280, 70, 20)
-canvas.create_line(70, 20, 170, 20)
-canvas.create_line(170, 20, 170, 50)
+def draw_scaffold():
+    canvas.create_line(20, 280, 120, 280, fill=current_theme["fg"])
+    canvas.create_line(70, 280, 70, 20, fill=current_theme["fg"])
+    canvas.create_line(70, 20, 170, 20, fill=current_theme["fg"])
+    canvas.create_line(170, 20, 170, 50, fill=current_theme["fg"])
 
-# Create a label for displaying the word
-word_label = tk.Label(root, text=" ".join(["_" for letter in word]))
-word_label.grid(column=0, row=1)
+# =============================
+# GAME SETUP
+# =============================
+def setup_game():
+    global word, guesses, guessed_letters
 
-# Create a label for displaying the number of guesses remaining
-guesses_label = tk.Label(root, text="Guesses remaining: {}".format(guesses))
-guesses_label.grid(column=0, row=2)
+    if difficulty == "Easy":
+        word = random.choice(easy_words)
+        guesses = 8
+    elif difficulty == "Medium":
+        word = random.choice(medium_words)
+        guesses = 6
+    else:
+        word = random.choice(hard_words)
+        guesses = 4
 
-# Create a label for displaying the letters guessed so far
-guessed_label = tk.Label(root, text="Guessed letters: ")
-guessed_label.grid(column=0, row=3)
+    guessed_letters.clear()
 
-# Create an entry for the user to guess a letter
+# =============================
+# LABELS & ENTRY
+# =============================
+word_label = tk.Label(root, font=("Arial", 16),
+                      bg=current_theme["bg"], fg=current_theme["fg"])
+word_label.grid(row=1, column=0, columnspan=3)
+
+guesses_label = tk.Label(root,
+                         bg=current_theme["bg"], fg=current_theme["fg"])
+guesses_label.grid(row=2, column=0, columnspan=3)
+
+guessed_label = tk.Label(root,
+                         bg=current_theme["bg"], fg=current_theme["fg"])
+guessed_label.grid(row=3, column=0, columnspan=3)
+
 guess_entry = tk.Entry(root)
-guess_entry.grid(column=0, row=4)
+guess_entry.grid(row=4, column=0, columnspan=3)
 
-# Define a function to check the user's guess
+# =============================
+# GAME LOGIC
+# =============================
 def check_guess():
     global guesses
-    global guessed_letters
-    global word_label
-    
+
     guess = guess_entry.get().lower()
     guess_entry.delete(0, tk.END)
-    
-    # Check if the guess is a single letter
+
     if len(guess) != 1 or not guess.isalpha():
         return
-    
-    # Check if the guess has already been guessed
     if guess in guessed_letters:
         return
-    
+
     guessed_letters.append(guess)
-    guessed_label.config(text="Guessed letters: {}".format(" ".join(guessed_letters)))
-    
-    # Check if the guess is in the word
+    guessed_label.config(text="Guessed letters: " + " ".join(guessed_letters))
+
     if guess in word:
         word_list = list(word_label["text"])
-        for i in range(len(word)):
-            if word[i] == guess:
-                word_list[2*i] = guess
+        for i, letter in enumerate(word):
+            if letter == guess:
+                word_list[2 * i] = guess
         word_label.config(text="".join(word_list))
-        
-        # Check if the user has won
+
         if "_" not in word_list:
             playsound("win.wav")
-            messagebox.showinfo("Hangman", "You win!")
-            retry_button.grid(column=0, row=5)
-            exit_button.grid(column=0, row=6)
+            messagebox.showinfo("Hangman", "🎉 You Win!")
             guess_entry.config(state=tk.DISABLED)
-            return
-    
-    # If the guess is not in the word, decrement the number of guesses remaining
     else:
         guesses -= 1
-        guesses_label.config(text="Guesses remaining: {}".format(guesses))
-        
-        # Draw the hangman
-        if guesses == 5:
-            canvas.create_oval(140, 50, 200, 110)
-        elif guesses == 4:
-            canvas.create_line(170, 110, 170, 170)
-        elif guesses == 3:
-            canvas.create_line(170, 130, 140, 140)
-        elif guesses == 2:
-            canvas.create_line(170, 130, 200, 140)
-        elif guesses == 1:
-            canvas.create_line(170, 170, 140, 190)
-        elif guesses == 0:
-            canvas.create_line(170, 170, 200, 190)
-            playsound("lose.mp3")
-            messagebox.showinfo("Hangman", "You lose! The word was '{}'".format(word))
-            retry_button.grid(column=0, row=5)
-            exit_button.grid(column=0, row=6)
-            guess_entry.config(state=tk.DISABLED)
+        guesses_label.config(text=f"Guesses remaining: {guesses}")
+        draw_hangman()
 
-def retry_game():
-    global word
-    global guesses
-    global guessed_letters
-    word = random.choice(words)
-    guesses = 6
-    guessed_letters = []
+def draw_hangman():
+    if guesses == 5:
+        canvas.create_oval(140, 50, 200, 110, outline=current_theme["fg"])
+    elif guesses == 4:
+        canvas.create_line(170, 110, 170, 170, fill=current_theme["fg"])
+    elif guesses == 3:
+        canvas.create_line(170, 130, 140, 140, fill=current_theme["fg"])
+    elif guesses == 2:
+        canvas.create_line(170, 130, 200, 140, fill=current_theme["fg"])
+    elif guesses == 1:
+        canvas.create_line(170, 170, 140, 190, fill=current_theme["fg"])
+    elif guesses == 0:
+        canvas.create_line(170, 170, 200, 190, fill=current_theme["fg"])
+        playsound("lose.mp3")
+        messagebox.showinfo("Hangman", f"❌ You Lose!\nWord was: {word}")
+        guess_entry.config(state=tk.DISABLED)
 
-    word_label.config(text=" ".join(["_" for letter in word]))
-    guesses_label.config(text="Guesses remaining: {}".format(guesses))
+# =============================
+# HINT SYSTEM
+# =============================
+def give_hint():
+    available = [c for c in word if c not in guessed_letters]
+    if available:
+        hint = random.choice(available)
+        guess_entry.insert(0, hint)
+        check_guess()
+
+# =============================
+# RESTART GAME
+# =============================
+def restart_game():
+    setup_game()
+    canvas.delete("all")
+    draw_scaffold()
+    word_label.config(text=" ".join("_" for _ in word))
+    guesses_label.config(text=f"Guesses remaining: {guesses}")
     guessed_label.config(text="Guessed letters: ")
     guess_entry.config(state=tk.NORMAL)
-    canvas.delete("all")
-    canvas.create_line(20, 280, 120, 280)
-    canvas.create_line(70, 280, 70, 20)
-    canvas.create_line(70, 20, 170, 20)
-    canvas.create_line(170, 20, 170, 50)
-    retry_button.grid_forget()
-    exit_button.grid_forget()
 
-def exit_game():
-    root.destroy()
+# =============================
+# THEME TOGGLE
+# =============================
+def toggle_theme():
+    global current_theme
+    current_theme = LIGHT_THEME if current_theme == DARK_THEME else DARK_THEME
 
-retry_button = tk.Button(root, text="Retry", command=retry_game)
+    root.config(bg=current_theme["bg"])
+    canvas.config(bg=current_theme["canvas"])
+    draw_scaffold()
 
-exit_button = tk.Button(root, text="Exit", command=exit_game)
+    for widget in root.winfo_children():
+        if isinstance(widget, tk.Label):
+            widget.config(bg=current_theme["bg"], fg=current_theme["fg"])
+
+# =============================
+# DIFFICULTY CHANGE
+# =============================
+def change_difficulty(level):
+    global difficulty
+    difficulty = level
+    restart_game()
+
+# =============================
+# BUTTONS
+# =============================
+tk.Button(root, text="Guess", command=check_guess).grid(row=5, column=0)
+tk.Button(root, text="Hint", command=give_hint).grid(row=5, column=1)
+tk.Button(root, text="Restart", command=restart_game).grid(row=5, column=2)
+
+tk.Button(root, text="Easy", command=lambda: change_difficulty("Easy")).grid(row=6, column=0)
+tk.Button(root, text="Medium", command=lambda: change_difficulty("Medium")).grid(row=6, column=1)
+tk.Button(root, text="Hard", command=lambda: change_difficulty("Hard")).grid(row=6, column=2)
+
+tk.Button(root, text="Light / Dark", command=toggle_theme)\
+    .grid(row=7, column=0, columnspan=3)
+
+# =============================
+# INITIALIZE GAME
+# =============================
+setup_game()
+draw_scaffold()
+restart_game()
 
 root.bind("<Return>", lambda event: check_guess())
-
 root.mainloop()
