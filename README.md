@@ -25,7 +25,7 @@ You can install the required libraries using the following commands:
 
 ```
 pip install tkinter
-pip install playsound
+pip install playsound3
 ```
 
 Note: The playsound library requires the availability of a media player on your system to play the sound effects.
